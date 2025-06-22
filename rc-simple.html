@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rescue Stop Calculator v2</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        background: #fff;
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 24px 28px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px #0001;
+      }
+      h1 {
+        text-align: center;
+      }
+      label {
+        display: block;
+        margin-top: 16px;
+        font-weight: bold;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 4px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      button {
+        margin-top: 24px;
+        width: 100%;
+        padding: 12px;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .result {
+        margin-top: 24px;
+        background: #e9ecef;
+        padding: 16px;
+        border-radius: 4px;
+      }
+      .error {
+        color: red;
+        margin-top: 12px;
+      }
+      .flex-row {
+        display: flex;
+        gap: 8px;
+      }
+      .flex-row > div {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Rescue Stop Calculator v2</h1>
+      <label for="remainingStops">Remaining Stops:</label>
+      <input type="number" id="remainingStops" min="1" required />
+
+      <div class="flex-row">
+        <div>
+          <label for="driverSPH">Driver's Avg SPH:</label>
+          <input
+            type="number"
+            id="driverSPH"
+            min="1"
+            step="0.1"
+            placeholder="e.g. 18"
+          />
+        </div>
+        <div style="align-self: end; text-align: center">or</div>
+        <div>
+          <label for="timePerStop">Avg Time/Stop (min):</label>
+          <input
+            type="number"
+            id="timePerStop"
+            min="1"
+            step="0.1"
+            placeholder="e.g. 3.5"
+          />
+        </div>
+      </div>
+
+      <label for="nonDeliveryTime">Return Drive Time (min):</label>
+      <input type="number" id="nonDeliveryTime" min="0" value="0" />
+
+      <label for="returnTime">Required Return Time:</label>
+      <select id="returnTime"></select>
+
+      <button onclick="calculateFinish()">Calculate</button>
+      <div id="errorMsg" class="error"></div>
+      <div id="result" class="result" style="display: none"></div>
+    </div>
+
+    <script>
+      // Populate return time dropdown
+      const returnTimeSelect = document.getElementById("returnTime");
+      function pad(n) {
+        return n < 10 ? "0" + n : n;
+      }
+      let baseHour = 20,
+        baseMin = 15; // 8:15 PM
+      let earliestHour = 18,
+        earliestMin = 15; // 6:15 PM
+      let baseTotalMins = baseHour * 60 + baseMin;
+      let earliestTotalMins = earliestHour * 60 + earliestMin;
+      let steps = (baseTotalMins - earliestTotalMins) / 5;
+      for (let i = 0; i <= steps; i++) {
+        let mins = baseTotalMins - i * 5;
+        let h = Math.floor(mins / 60),
+          m = mins % 60;
+        let label = `${h % 12 || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`;
+        let val = `${pad(h)}:${pad(m)}`;
+        let option = document.createElement("option");
+        option.value = val;
+        option.textContent = label;
+        returnTimeSelect.appendChild(option);
+      }
+
+      // Get input elements
+      const sphInput = document.getElementById("driverSPH");
+      const tpsInput = document.getElementById("timePerStop");
+
+      // Track which field was last edited
+      let lastEdited = null;
+
+      // When SPH changes, update Time/Stop if SPH is valid
+      sphInput.addEventListener("input", function () {
+        lastEdited = "sph";
+        const sph = parseFloat(sphInput.value);
+        if (sph > 0) {
+          tpsInput.value = (60 / sph).toFixed(2);
+        } else if (!sphInput.value) {
+          tpsInput.value = "";
+        }
+      });
+
+      // When Time/Stop changes, update SPH if Time/Stop is valid
+      tpsInput.addEventListener("input", function () {
+        lastEdited = "tps";
+        const tps = parseFloat(tpsInput.value);
+        if (tps > 0) {
+          sphInput.value = (60 / tps).toFixed(2);
+        } else if (!tpsInput.value) {
+          sphInput.value = "";
+        }
+      });
+
+      function calculateFinish() {
+        document.getElementById("errorMsg").textContent = "";
+        document.getElementById("result").style.display = "none";
+
+        const stops = parseInt(document.getElementById("remainingStops").value);
+        const sph = parseFloat(sphInput.value);
+        const tps = parseFloat(tpsInput.value);
+        const nonDelivery =
+          parseInt(document.getElementById("nonDeliveryTime").value) || 0;
+        const returnTimeStr = document.getElementById("returnTime").value;
+
+        // Validation
+        if (!stops || stops < 1) {
+          document.getElementById("errorMsg").textContent =
+            "Enter remaining stops.";
+          return;
+        }
+        if (lastEdited === "sph" && (!sph || sph <= 0)) {
+          document.getElementById("errorMsg").textContent =
+            "Enter a valid SPH.";
+          return;
+        }
+        if (lastEdited === "tps" && (!tps || tps <= 0)) {
+          document.getElementById("errorMsg").textContent =
+            "Enter a valid time per stop.";
+          return;
+        }
+        if (!lastEdited) {
+          document.getElementById("errorMsg").textContent =
+            "Enter SPH or time per stop.";
+          return;
+        }
+        if (nonDelivery < 0) {
+          document.getElementById("errorMsg").textContent =
+            "Return drive time cannot be negative.";
+          return;
+        }
+
+        // Calculate delivery time needed
+        let deliveryMinutes = 0;
+        if (lastEdited === "sph") {
+          deliveryMinutes = (stops / sph) * 60;
+        } else if (lastEdited === "tps") {
+          deliveryMinutes = stops * tps;
+        }
+
+        const totalMinutesNeeded = Math.ceil(deliveryMinutes + nonDelivery);
+
+        // Calculate finish time (assume calculation is for "now")
+        const now = new Date();
+        let finish = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          now.getHours(),
+          now.getMinutes()
+        );
+        finish.setMinutes(finish.getMinutes() + totalMinutesNeeded);
+
+        // Parse required return time
+        const [retHour, retMin] = returnTimeStr.split(":").map(Number);
+        let requiredReturn = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          retHour,
+          retMin
+        );
+
+        // If finish is after midnight, adjust requiredReturn
+        if (finish < now && requiredReturn < now) {
+          finish.setDate(finish.getDate() + 1);
+          requiredReturn.setDate(requiredReturn.getDate() + 1);
+        } else if (
+          finish > requiredReturn &&
+          finish.getDate() > requiredReturn.getDate()
+        ) {
+          requiredReturn.setDate(requiredReturn.getDate() + 1);
+        }
+
+        // Output
+        let finishStr = `${pad(finish.getHours())}:${pad(
+          finish.getMinutes()
+        )} ${finish.getHours() < 12 ? "AM" : "PM"}`;
+        let resultDiv = document.getElementById("result");
+        let willFinish = finish <= requiredReturn;
+        let stopsPossible = 0;
+        if (!willFinish) {
+          // How many stops can be done before requiredReturn?
+          let availableMinutes = (requiredReturn - now) / 60000 - nonDelivery;
+          if (availableMinutes < 0) availableMinutes = 0;
+          if (sph && sph > 0) {
+            stopsPossible = Math.floor(sph * (availableMinutes / 60));
+          } else if (tps && tps > 0) {
+            stopsPossible = Math.floor(availableMinutes / tps);
+          }
+        }
+
+        // Calculate available delivery minutes
+        let availableMinutes = (requiredReturn - now) / 60000 - nonDelivery;
+        let requiredTimePerStop =
+          availableMinutes > 0 && stops > 0 ? availableMinutes / stops : 0;
+
+        resultDiv.innerHTML = `
+        <strong>Estimated Finish Time:</strong> ${finishStr}<br>
+        <strong>Required Return By:</strong> ${
+          returnTimeSelect.options[returnTimeSelect.selectedIndex].text
+        }<br>
+        <strong>Will finish on time?</strong> ${
+          willFinish
+            ? '<span style="color:green;">Yes</span>'
+            : '<span style="color:orange;">No</span>'
+        }
+        <br>
+        <strong>Time at Stop to Finish On Time:</strong> ${
+          requiredTimePerStop > 0
+            ? requiredTimePerStop.toFixed(2) + " min/stop"
+            : "N/A"
+        }
+        ${
+          !willFinish
+            ? `<br><strong>Stops possible before return:</strong> ${stopsPossible}<br><strong>Stops needing rescue:</strong> ${
+                stops - stopsPossible
+              }`
+            : ""
+        }
+      `;
+        resultDiv.style.display = "block";
+      }
+    </script>
+  </body>
+</html>
