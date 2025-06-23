@@ -1,4 +1,5 @@
 # Rescue Stop Calculator v2
+
 https://samuelk152.github.io/Rescue-Calculator/
 
 A calculator designed to be used by Amazon dispatchers to estimate a driver's progress and determine if a rescue is needed.
@@ -27,10 +28,11 @@ The Rescue Stop Calculator v2 is a web-based tool that helps Amazon dispatchers 
 1. **Enter Remaining Stops:**  
    Input the number of stops the driver has left on their route.
 
-2. **Enter Driver's Avg SPH or Avg Time/Stop:**  
-   - Enter the driver's average stops per hour (SPH), or  
+2. **Enter Driver's Avg SPH or Avg Time/Stop:**
+
+   - Enter the driver's average stops per hour (SPH), or
    - Enter the average time per stop (in minutes).  
-   The calculator will automatically update the other field for you.
+     The calculator will automatically update the other field for you.
 
 3. **Enter Return Drive Time (optional):**  
    If the driver has a non-delivery drive time (e.g., returning to the station), enter it in minutes.
@@ -49,10 +51,6 @@ The Rescue Stop Calculator v2 is a web-based tool that helps Amazon dispatchers 
 ## Example
 
 If a driver has 30 stops left, averages 18 SPH, and must return by 8:15 PM, the calculator will estimate their finish time and indicate if a rescue is needed.
-
-## Running the Calculator
-
-Open [`index.html`](index.html) in your browser to use the calculator.
 
 ## Feedback
 
