@@ -65,11 +65,48 @@
       .flex-row > div {
         flex: 1;
       }
+      .result-bar {
+        display: flex;
+        margin: 18px 0 12px 0;
+        height: 38px;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid #bbb;
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+      .bar-possible {
+        background: #cce2ff;
+        color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.3s;
+      }
+      .bar-rescue {
+        background: #ffd6d6;
+        color: #a00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.3s;
+      }
+      .bar-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2px;
+        font-size: 0.98em;
+        font-weight: bold;
+      }
+      .centered {
+        text-align: center;
+        margin-bottom: 8px;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Rescue Stop Calculator v2</h1>
+      <h1>Rescue Stop Calculator v2.1</h1>
       <label for="remainingStops">Remaining Stops:</label>
       <input type="number" id="remainingStops" min="1" required />
 
@@ -235,64 +272,78 @@
           retMin
         );
 
-        // If finish is after midnight, adjust requiredReturn
-        if (finish < now && requiredReturn < now) {
-          finish.setDate(finish.getDate() + 1);
-          requiredReturn.setDate(requiredReturn.getDate() + 1);
-        } else if (
-          finish > requiredReturn &&
-          finish.getDate() > requiredReturn.getDate()
-        ) {
-          requiredReturn.setDate(requiredReturn.getDate() + 1);
-        }
-
         // Output
-        let finishStr = `${pad(finish.getHours())}:${pad(
-          finish.getMinutes()
-        )} ${finish.getHours() < 12 ? "AM" : "PM"}`;
+        let finishHour = finish.getHours() % 12 || 12;
+        let finishMin = pad(finish.getMinutes());
+        let finishPeriod = finish.getHours() < 12 ? "AM" : "PM";
+        let finishStr = `${finishHour}:${finishMin} ${finishPeriod}`;
         let resultDiv = document.getElementById("result");
         let willFinish = finish <= requiredReturn;
+        let availableMinutes = (requiredReturn - now) / 60000 - nonDelivery;
+        if (availableMinutes < 0) availableMinutes = 0;
         let stopsPossible = 0;
         if (!willFinish) {
-          // How many stops can be done before requiredReturn?
-          let availableMinutes = (requiredReturn - now) / 60000 - nonDelivery;
-          if (availableMinutes < 0) availableMinutes = 0;
           if (sph && sph > 0) {
             stopsPossible = Math.floor(sph * (availableMinutes / 60));
           } else if (tps && tps > 0) {
             stopsPossible = Math.floor(availableMinutes / tps);
           }
+        } else {
+          stopsPossible = stops;
         }
 
         // Calculate available delivery minutes
-        let availableMinutes = (requiredReturn - now) / 60000 - nonDelivery;
+        // Calculate bar widths
+        let total = stops > 0 ? stops : 1;
+        let possiblePct = Math.max(
+          0,
+          Math.min(100, (stopsPossible / total) * 100)
+        );
+        let rescuePct = Math.max(
+          0,
+          Math.min(100, ((stops - stopsPossible) / total) * 100)
+        );
+        let needingRescue = stops - stopsPossible;
         let requiredTimePerStop =
           availableMinutes > 0 && stops > 0 ? availableMinutes / stops : 0;
+        let avgStopHr =
+          requiredTimePerStop > 0
+            ? (60 / requiredTimePerStop).toFixed(2)
+            : "N/A";
 
         resultDiv.innerHTML = `
-        <strong>Estimated Finish Time:</strong> ${finishStr}<br>
-        <strong>Required Return By:</strong> ${
-          returnTimeSelect.options[returnTimeSelect.selectedIndex].text
-        }<br>
-        <strong>Will finish on time?</strong> ${
-          willFinish
-            ? '<span style="color:green;">Yes</span>'
-            : '<span style="color:orange;">No</span>'
-        }
-        <br>
-        <strong>Time at Stop to Finish On Time:</strong> ${
-          requiredTimePerStop > 0
-            ? requiredTimePerStop.toFixed(2) + " min/stop"
-            : "N/A"
-        }
-        ${
-          !willFinish
-            ? `<br><strong>Stops possible before return:</strong> ${stopsPossible}<br><strong>Stops needing rescue:</strong> ${
-                stops - stopsPossible
-              }`
-            : ""
-        }
-      `;
+  <div class="centered">
+    <div>Will Finish by <strong>${
+      returnTimeSelect.options[returnTimeSelect.selectedIndex].text
+    }</strong>?</div>
+    <div style="margin: 6px 0 10px 0; font-size: 1.2em;">
+      ${
+        willFinish
+          ? '<span style="color:green;font-weight:bold;">Yes</span>'
+          : '<span style="color:orange;font-weight:bold;">No</span>'
+      }
+    </div>
+  </div>
+  <div class="bar-labels">
+    <span>Stops Possible</span>
+    <span>Needing Rescue</span>
+  </div>
+  <div class="result-bar">
+    <div class="bar-possible" style="width:${possiblePct}%;">
+      ${stopsPossible}
+    </div>
+    <div class="bar-rescue" style="width:${rescuePct}%;">
+      ${needingRescue > 0 ? needingRescue : ""}
+    </div>
+  </div>
+  <div style="margin-top: 10px;">
+    <div>Estimated finish time: <strong>${finishStr}</strong></div>
+    <div>Time at stop to finish (min): <strong>${
+      requiredTimePerStop > 0 ? requiredTimePerStop.toFixed(2) : "N/A"
+    }</strong></div>
+    <div>Avg Stop / Hr to finish: <strong>${avgStopHr}</strong></div>
+  </div>
+`;
         resultDiv.style.display = "block";
       }
     </script>
