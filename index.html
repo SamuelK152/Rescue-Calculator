@@ -26,6 +26,7 @@
         margin-top: 16px;
         font-weight: bold;
       }
+
       input,
       select {
         width: 100%;
@@ -35,7 +36,7 @@
         border: 1px solid #ccc;
       }
       button {
-        margin-top: 24px;
+        margin: 1rem;
         width: 100%;
         padding: 12px;
         background: #007bff;
@@ -106,7 +107,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>Rescue Stop Calculator v2.1</h1>
+      <h1>Rescue Stop Calculator v2.2</h1>
       <label for="remainingStops">Remaining Stops:</label>
       <input type="number" id="remainingStops" min="1" required />
 
@@ -136,43 +137,105 @@
 
       <label for="nonDeliveryTime">Return Drive Time (min):</label>
       <input type="number" id="nonDeliveryTime" min="0" value="0" />
-
-      <label for="returnTime">Required Return Time:</label>
-      <select id="returnTime"></select>
-
-      <button onclick="calculateFinish()">Calculate</button>
-      <div id="errorMsg" class="error"></div>
+      <div class="flex-row">
+        <label style="margin: auto" for="returnTime"
+          >Required Return Time:</label
+        >
+        <div
+          id="returnTimePicker"
+          style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+          "
+        >
+          <div
+            style="display: flex; flex-direction: column; align-items: center"
+          >
+            <button type="button" id="hourUp">&#9650;</button>
+            <span id="hourDisplay" style="font-size: 1.5em">8</span>
+            <button id="hourDown">&#9660;</button>
+          </div>
+          <span style="font-size: 1.5em">:</span>
+          <div
+            style="display: flex; flex-direction: column; align-items: center"
+          >
+            <button type="button" id="minUp">&#9650;</button>
+            <span id="minDisplay" style="font-size: 1.5em">15</span>
+            <button type="button" id="minDown">&#9660;</button>
+          </div>
+          <span id="ampmDisplay" style="font-size: 1.2em; margin-left: 8px"
+            >PM</span
+          >
+        </div>
+      </div>
+      <div class="flex-row">
+        <button onclick="calculateFinish()">Calculate</button>
+      </div>
+      <div style="justify-self: center" id="errorMsg" class="error"></div>
       <div id="result" class="result" style="display: none"></div>
     </div>
     <div style="text-align: center; margin-top: 18px">
       <a href="https://www.youtube.com/watch?v=XfELJU1mRMg" target="_blank">
-        FeedBack
+        Feedback
       </a>
     </div>
     <script>
-      // Populate return time dropdown
-      const returnTimeSelect = document.getElementById("returnTime");
+      // --- Custom Return Time Picker ---
       function pad(n) {
         return n < 10 ? "0" + n : n;
       }
-      let baseHour = 20,
-        baseMin = 15; // 8:15 PM
-      let earliestHour = 18,
-        earliestMin = 15; // 6:15 PM
-      let baseTotalMins = baseHour * 60 + baseMin;
-      let earliestTotalMins = earliestHour * 60 + earliestMin;
-      let steps = (baseTotalMins - earliestTotalMins) / 5;
-      for (let i = 0; i <= steps; i++) {
-        let mins = baseTotalMins - i * 5;
-        let h = Math.floor(mins / 60),
-          m = mins % 60;
-        let label = `${h % 12 || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`;
-        let val = `${pad(h)}:${pad(m)}`;
-        let option = document.createElement("option");
-        option.value = val;
-        option.textContent = label;
-        returnTimeSelect.appendChild(option);
+      let hour = 8,
+        min = 15,
+        ampm = "PM";
+      const hourDisplay = document.getElementById("hourDisplay");
+      const minDisplay = document.getElementById("minDisplay");
+      const ampmDisplay = document.getElementById("ampmDisplay");
+
+      function updateTimeDisplay() {
+        hourDisplay.textContent = hour;
+        minDisplay.textContent = pad(min);
+        ampmDisplay.textContent = ampm;
       }
+      function getReturnTime24() {
+        let h = hour % 12;
+        if (ampm === "PM") h += 12;
+        return { h, m: min };
+      }
+      document.getElementById("hourUp").onclick = function () {
+        hour = hour === 12 ? 1 : hour + 1;
+        updateTimeDisplay();
+      };
+      document.getElementById("hourDown").onclick = function () {
+        hour = hour === 1 ? 12 : hour - 1;
+        updateTimeDisplay();
+      };
+      document.getElementById("minUp").onclick = function () {
+        min += 5;
+        if (min >= 60) {
+          min = 0;
+          hour = hour === 12 ? 1 : hour + 1;
+          if (hour === 12) ampm = ampm === "AM" ? "PM" : "AM";
+        }
+        updateTimeDisplay();
+      };
+      document.getElementById("minDown").onclick = function () {
+        min -= 5;
+        if (min < 0) {
+          min = 55;
+          hour = hour === 1 ? 12 : hour - 1;
+          if (hour === 11) ampm = ampm === "AM" ? "PM" : "AM";
+        }
+        updateTimeDisplay();
+      };
+      // Optional: click hour/min to toggle AM/PM
+      ampmDisplay.onclick = function () {
+        ampm = ampm === "AM" ? "PM" : "AM";
+        updateTimeDisplay();
+      };
+      updateTimeDisplay();
 
       // Get input elements
       const sphInput = document.getElementById("driverSPH");
@@ -212,7 +275,6 @@
         const tps = parseFloat(tpsInput.value);
         const nonDelivery =
           parseInt(document.getElementById("nonDeliveryTime").value) || 0;
-        const returnTimeStr = document.getElementById("returnTime").value;
 
         // Validation
         if (!stops || stops < 1) {
@@ -262,8 +324,7 @@
         );
         finish.setMinutes(finish.getMinutes() + totalMinutesNeeded);
 
-        // Parse required return time
-        const [retHour, retMin] = returnTimeStr.split(":").map(Number);
+        const { h: retHour, m: retMin } = getReturnTime24();
         let requiredReturn = new Date(
           now.getFullYear(),
           now.getMonth(),
@@ -313,9 +374,7 @@
 
         resultDiv.innerHTML = `
   <div class="centered">
-    <div>Will Finish by <strong>${
-      returnTimeSelect.options[returnTimeSelect.selectedIndex].text
-    }</strong>?</div>
+    <div>Will Finish by <strong>${`${hour}:${pad(min)} ${ampm}`}</strong>?</div>
     <div style="margin: 6px 0 10px 0; font-size: 1.2em;">
       ${
         willFinish
