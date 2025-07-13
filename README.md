@@ -1,4 +1,4 @@
-# Rescue Stop Calculator v2
+# Rescue Stop Calculator v2.1
 
 https://samuelk152.github.io/Rescue-Calculator/
 
@@ -6,7 +6,7 @@ A calculator designed to be used by Amazon dispatchers to estimate a driver's pr
 
 ## Overview
 
-The Rescue Stop Calculator v2 is a web-based tool that helps Amazon dispatchers quickly estimate whether a delivery driver will complete their remaining stops before a required return time. By entering the number of stops left, the driver's average stops per hour (SPH) or average time per stop, and the required return time, dispatchers can:
+The Rescue Stop Calculator is a web-based tool that helps Amazon dispatchers quickly estimate whether a delivery driver will complete their remaining stops before a required return time. By entering the number of stops left, the driver's average stops per hour (SPH) or average time per stop, and the required return time, dispatchers can:
 
 - **Estimate the driver's finish time**
 - **See if the driver will return on time**
@@ -21,7 +21,7 @@ The Rescue Stop Calculator v2 is a web-based tool that helps Amazon dispatchers 
 - Optional field for return drive time (non-delivery time)
 - Selectable required return time
 - Instant calculation and clear results
-- Feedback link for suggestions or issues
+- Feedback link for
 
 ## How to Use
 
@@ -42,11 +42,13 @@ The Rescue Stop Calculator v2 is a web-based tool that helps Amazon dispatchers 
 
 5. **Click "Calculate":**  
    The calculator will display:
-   - Estimated finish time
-   - Required return time
-   - Whether the driver will finish on time
-   - The maximum allowable time per stop to finish on time
-   - If the driver will not finish on time, the number of stops possible before return and the number of stops needing rescue
+   - Whether the driver will finish by the desired time
+     If not,
+   - How many stops are possible before OT
+   - How many stops are needed to be rescued before OT
+   - The estimated finish time
+   - The maximum allowable time per stop in order to finish on time
+   - The average stops per hour required in order to finish on time
 
 ## Example
 
