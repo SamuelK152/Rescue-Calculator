@@ -49,6 +49,10 @@
       button:hover {
         background: #0056b3;
       }
+
+      #advancedOptions label {
+        margin-top: 12px;
+      }
       .result {
         margin-top: 24px;
         background: #e9ecef;
@@ -65,6 +69,12 @@
       }
       .flex-row > div {
         flex: 1;
+      }
+      .lColumn {
+        margin-right: 16px;
+      }
+      .rColumn {
+        margin-left: 16px;
       }
       .result-bar {
         display: flex;
@@ -107,36 +117,61 @@
   </head>
   <body>
     <div class="container">
-      <h1>Rescue Stop Calculator v2.2</h1>
-      <label for="remainingStops">Remaining Stops:</label>
-      <input type="number" id="remainingStops" min="1" required />
-
-      <div class="flex-row">
-        <div>
-          <label for="driverSPH">Driver's Avg SPH:</label>
-          <input
-            type="number"
-            id="driverSPH"
-            min="1"
-            step="0.1"
-            placeholder="e.g. 18"
-          />
+      <h1>Rescue Stop Calculator v2.3</h1>
+      <button id="toggleAdvanced" style="width: 100%; margin-bottom: 1rem">
+        Show Advanced Options
+      </button>
+      <div class="flex-row" id="mainInputRow">
+        <div style="flex: 1; min-width: 0">
+          <label for="remainingStops">Remaining Stops:</label>
+          <input type="number" id="remainingStops" min="1" required />
+          <div id="sphTpsRow" class="flex-row">
+            <div style="flex: 1; min-width: 0" class="lColumn">
+              <label for="driverSPH">Driver's Avg SPH:</label>
+              <input
+                type="number"
+                id="driverSPH"
+                min="1"
+                step="0.1"
+                placeholder="i.e. 18"
+              />
+            </div>
+            <div style="flex: 1; min-width: 0" class="rColumn">
+              <label for="timePerStop">Avg Time/Stop (min):</label>
+              <input
+                type="number"
+                id="timePerStop"
+                min="1"
+                step="0.1"
+                placeholder="i.e. 3.5"
+              />
+            </div>
+          </div>
         </div>
-        <div style="align-self: end; text-align: center">or</div>
-        <div>
-          <label for="timePerStop">Avg Time/Stop (min):</label>
+        <div id="advancedOptions" style="flex: 1; min-width: 0; display: none">
+          <label for="stopsBeforeChange">Stops Before Rate Change:</label>
+          <input type="number" id="stopsBeforeChange" min="1" />
+          <label for="newSPH">New Avg SPH:</label>
           <input
             type="number"
-            id="timePerStop"
+            id="newSPH"
             min="1"
             step="0.1"
-            placeholder="e.g. 3.5"
+            placeholder="i.e. 15"
+          />
+          <label for="newTimePerStop">New Avg Time/Stop (min):</label>
+          <input
+            type="number"
+            id="newTimePerStop"
+            min="1"
+            step="0.1"
+            placeholder="i.e. 4.0"
           />
         </div>
       </div>
 
-      <label for="nonDeliveryTime">Return Drive Time (min):</label>
-      <input type="number" id="nonDeliveryTime" min="0" value="0" />
+      <label for="nonDeliveryTime">Additional Time (min):</label>
+      <input type="text" id="nonDeliveryTime" value="0" />
       <div class="flex-row">
         <label style="margin: auto" for="returnTime"
           >Required Return Time:</label
@@ -240,6 +275,8 @@
       // Get input elements
       const sphInput = document.getElementById("driverSPH");
       const tpsInput = document.getElementById("timePerStop");
+      const newSphInput = document.getElementById("newSPH");
+      const newTpsInput = document.getElementById("newTimePerStop");
 
       // Track which field was last edited
       let lastEdited = null;
@@ -266,6 +303,68 @@
         }
       });
 
+      // --- Advanced: New SPH/Time autofill ---
+      newSphInput.addEventListener("input", function () {
+        const sph = parseFloat(newSphInput.value);
+        if (sph > 0) {
+          newTpsInput.value = (60 / sph).toFixed(2);
+        } else if (!newSphInput.value) {
+          newTpsInput.value = "";
+        }
+      });
+
+      newTpsInput.addEventListener("input", function () {
+        const tps = parseFloat(newTpsInput.value);
+        if (tps > 0) {
+          newSphInput.value = (60 / tps).toFixed(2);
+        } else if (!newTpsInput.value) {
+          newSphInput.value = "";
+        }
+      });
+
+      const toggleBtn = document.getElementById("toggleAdvanced");
+      const advSection = document.getElementById("advancedOptions");
+      let advancedMode = false;
+
+      toggleBtn.onclick = function () {
+        advancedMode = !advancedMode;
+        advSection.style.display = advancedMode ? "block" : "none";
+        toggleBtn.textContent = advancedMode
+          ? "Hide Advanced Options"
+          : "Show Advanced Options";
+        // Toggle two-column layout
+        document.getElementById("mainInputRow").style.flexDirection =
+          advancedMode ? "row" : "column";
+        // Toggle SPH/TPS row layout
+        const sphTpsRow = document.getElementById("sphTpsRow");
+        if (advancedMode) {
+          sphTpsRow.classList.remove("flex-row");
+        } else {
+          sphTpsRow.classList.add("flex-row");
+        }
+        const mainInputRow = document.getElementById("mainInputRow");
+        const leftCol = mainInputRow.children[0];
+        const rightCol = mainInputRow.children[1];
+
+        // Get the SPH/TPS columns inside sphTpsRow
+        const sphCol = sphTpsRow.children[0];
+        const tpsCol = sphTpsRow.children[1];
+
+        if (advancedMode) {
+          leftCol.classList.add("lColumn");
+          rightCol.classList.add("rColumn");
+          // Remove from SPH/TPS fields
+          sphCol.classList.remove("lColumn");
+          tpsCol.classList.remove("rColumn");
+        } else {
+          leftCol.classList.remove("lColumn");
+          rightCol.classList.remove("rColumn");
+          // Re-add to SPH/TPS fields
+          sphCol.classList.add("lColumn");
+          tpsCol.classList.add("rColumn");
+        }
+      };
+
       function calculateFinish() {
         document.getElementById("errorMsg").textContent = "";
         document.getElementById("result").style.display = "none";
@@ -273,10 +372,17 @@
         const stops = parseInt(document.getElementById("remainingStops").value);
         const sph = parseFloat(sphInput.value);
         const tps = parseFloat(tpsInput.value);
-        const nonDelivery =
-          parseInt(document.getElementById("nonDeliveryTime").value) || 0;
+        const nonDeliveryInput =
+          document.getElementById("nonDeliveryTime").value;
+        let nonDelivery = 0;
+        try {
+          nonDelivery =
+            eval(nonDeliveryInput.replace(/[^-()\d/*+.]/g, "")) || 0;
+        } catch {
+          nonDelivery = 0;
+        }
 
-        // Validation
+        // --- Input Validation ---
         if (!stops || stops < 1) {
           document.getElementById("errorMsg").textContent =
             "Enter remaining stops.";
@@ -303,14 +409,46 @@
           return;
         }
 
-        // Calculate delivery time needed
-        let deliveryMinutes = 0;
-        if (lastEdited === "sph") {
-          deliveryMinutes = (stops / sph) * 60;
-        } else if (lastEdited === "tps") {
-          deliveryMinutes = stops * tps;
+        // --- Advanced Option Parsing ---
+        const stopsBefore = advancedMode
+          ? parseInt(document.getElementById("stopsBeforeChange").value) || 0
+          : 0;
+        const newSPH = advancedMode
+          ? parseFloat(document.getElementById("newSPH").value) || 0
+          : 0;
+        const newTPS = advancedMode
+          ? parseFloat(document.getElementById("newTimePerStop").value) || 0
+          : 0;
+        // --- Delivery Time Calculation ---
+        if (advancedMode && stopsBefore > 0) {
+          const stops1 = Math.min(stops, stopsBefore);
+          const stops2 = Math.max(0, stops - stopsBefore);
+          if (lastEdited === "sph") {
+            deliveryMinutes += (stops1 / sph) * 60;
+            deliveryMinutes += (stops2 / (newSPH > 0 ? newSPH : sph)) * 60;
+          } else if (lastEdited === "tps") {
+            deliveryMinutes += stops1 * tps;
+            deliveryMinutes += stops2 * (newTPS > 0 ? newTPS : tps);
+          }
+        } else if (
+          advancedMode &&
+          ((lastEdited === "sph" && newSPH > 0) ||
+            (lastEdited === "tps" && newTPS > 0))
+        ) {
+          if (lastEdited === "sph") {
+            deliveryMinutes = (stops / newSPH) * 60;
+          } else if (lastEdited === "tps") {
+            deliveryMinutes = stops * newTPS;
+          }
+        } else {
+          if (lastEdited === "sph") {
+            deliveryMinutes = (stops / sph) * 60;
+          } else if (lastEdited === "tps") {
+            deliveryMinutes = stops * tps;
+          }
         }
 
+        // --- Finish Time Calculation ---
         const totalMinutesNeeded = Math.ceil(deliveryMinutes + nonDelivery);
 
         // Calculate finish time (assume calculation is for "now")
@@ -339,22 +477,58 @@
         let finishPeriod = finish.getHours() < 12 ? "AM" : "PM";
         let finishStr = `${finishHour}:${finishMin} ${finishPeriod}`;
         let resultDiv = document.getElementById("result");
+        // --- Stops Possible & Rescue Calculation ---
         let willFinish = finish <= requiredReturn;
         let availableMinutes = (requiredReturn - now) / 60000 - nonDelivery;
         if (availableMinutes < 0) availableMinutes = 0;
-        let stopsPossible = 0;
+        let stopsPossible = stops;
         if (!willFinish) {
-          if (sph && sph > 0) {
-            stopsPossible = Math.floor(sph * (availableMinutes / 60));
-          } else if (tps && tps > 0) {
-            stopsPossible = Math.floor(availableMinutes / tps);
+          if (advancedMode && stopsBefore > 0) {
+            // Split available minutes into two segments for two rates
+            const minutes1 =
+              stopsBefore * (lastEdited === "sph" ? 60 / sph : tps);
+            if (availableMinutes < minutes1) {
+              // Not enough time for all first-rate stops
+              if (lastEdited === "sph" && sph > 0) {
+                stopsPossible = Math.floor(sph * (availableMinutes / 60));
+              } else if (lastEdited === "tps" && tps > 0) {
+                stopsPossible = Math.floor(availableMinutes / tps);
+              }
+            } else {
+              // Enough time for first-rate stops, use second rate for remainder
+              const minutes2 = availableMinutes - minutes1;
+              let stops2 = 0;
+              if (lastEdited === "sph") {
+                stops2 = Math.floor(
+                  (newSPH > 0 ? newSPH : sph) * (minutes2 / 60)
+                );
+              } else if (lastEdited === "tps") {
+                stops2 = Math.floor(minutes2 / (newTPS > 0 ? newTPS : tps));
+              }
+              stopsPossible = stopsBefore + stops2;
+            }
+          } else if (
+            advancedMode &&
+            ((lastEdited === "sph" && newSPH > 0) ||
+              (lastEdited === "tps" && newTPS > 0))
+          ) {
+            // Use new rate for all stops if provided
+            if (lastEdited === "sph") {
+              stopsPossible = Math.floor(newSPH * (availableMinutes / 60));
+            } else if (lastEdited === "tps") {
+              stopsPossible = Math.floor(availableMinutes / newTPS);
+            }
+          } else {
+            // Use main rate for all stops
+            if (lastEdited === "sph" && sph > 0) {
+              stopsPossible = Math.floor(sph * (availableMinutes / 60));
+            } else if (lastEdited === "tps" && tps > 0) {
+              stopsPossible = Math.floor(availableMinutes / tps);
+            }
           }
-        } else {
-          stopsPossible = stops;
         }
 
-        // Calculate available delivery minutes
-        // Calculate bar widths
+        // --- Output Rendering ---
         let total = stops > 0 ? stops : 1;
         let possiblePct = Math.max(
           0,

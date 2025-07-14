@@ -1,4 +1,4 @@
-# Rescue Stop Calculator v2.1
+# Rescue Stop Calculator v2.3
 
 https://samuelk152.github.io/Rescue-Calculator/
 
@@ -14,11 +14,21 @@ The Rescue Stop Calculator is a web-based tool that helps Amazon dispatchers qui
 - **Determine how many stops the driver can complete before the required return**
 - **Identify how many stops may need to be rescued**
 
+# NEW
+
+### Advanced Options & Improvements (v2.3)
+
+- **Advanced Options:** Toggle a two-rate calculation for drivers who change pace mid-route. Enter stops before rate change and the new rate to get more accurate finish/rescue estimates.
+- **Sum Input for Additional Time:** The "Additional Time (min)" field now accepts sums (i.e., `15 + 20 + 30`) for quick entry of multiple non-delivery time segments.
+- **Improved Calculation Logic:** The calculator now handles advanced scenarios, including split rates and dynamic rescue calculations, with clearer results and bar visualization.
+- **Code Comments & Cleanup:** The codebase is now easier to read and maintain, with clear comments for each section and improved formatting.
+
 ## Features
 
 - Simple, mobile-friendly interface
 - Enter stops, SPH, or time per stop (auto-converts between SPH and time/stop)
-- Optional field for return drive time (non-delivery time)
+- Advanced options to calculate return times of drivers who change pace mid-route
+- Optional field for additional time (Breaks, return drive time etc.)
 - Selectable required return time
 - Instant calculation and clear results
 - Feedback link for
